@@ -1,7 +1,7 @@
 # ================================================
-# OPTIMIZACIÓN DE HIPERPARÁMETROS CON GENETIC ALGORITHM Y BRANCH & BOUND
+# OPTIMIZACIÓN DE HIPERPARÁMETROS CON ALGORITMO GENÉTICO Y BRANCH & BOUND
 # Dataset: California Housing
-# Autor: Manuela Guedez Leivas y Lucía Olivera
+# Autor: Manuela Guedez Leivas y Lucía Olivera Freire
 # ================================================
 
 import pandas as pd
@@ -17,7 +17,7 @@ from sklearn.ensemble import RandomForestRegressor
 # 1. CARGA Y PREPROCESAMIENTO DEL DATASET
 # ================================================
 
-# Cargar dataset (asegurate de tener housing.csv en el mismo directorio)
+# Cargar dataset
 housing = pd.read_csv("housing.csv").dropna()
 
 RANDOM_STATE = 127
