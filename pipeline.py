@@ -12,7 +12,6 @@ from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import make_scorer, r2_score
 
 # ================================================
 # 1. CARGA Y PREPROCESAMIENTO DEL DATASET
@@ -61,10 +60,10 @@ def evaluate_model(params):
 
 # Espacio de búsqueda
 param_space = {
-    "n_estimators": [50, 100, 150, 200],
-    "max_depth": [2, 4, 6, 8, 10],
-    "min_samples_split": [2, 4, 6],
-    "min_samples_leaf": [1, 2, 3]
+    "n_estimators": [50, 100, 150, 200, 250, 300],
+    "max_depth": [4, 6, 8, 10, 12, 14, None],
+    "min_samples_split": [2, 4, 6, 8],
+    "min_samples_leaf": [1, 2, 3, 4, 5]
 }
 
 # ================================================
@@ -72,11 +71,19 @@ param_space = {
 # ================================================
 
 def random_params():
-    """Genera un conjunto aleatorio de hiperparámetros"""
+    """
+    Genera un conjunto aleatorio de hiperparámetros.
+
+    Es un individuo para el algoritmo genético.
+    """
     return {k: random.choice(v) for k, v in param_space.items()}
 
-def mutate(params, mutation_rate=0.2):
-    """Mutación aleatoria de un parámetro"""
+def mutate(params, mutation_rate=0.4):
+    """
+    Mutación aleatoria de un parámetro.
+    
+    Params es el individuo a mutar.
+    """
     new_params = params.copy()
     if random.random() < mutation_rate:
         key = random.choice(list(param_space.keys()))
@@ -88,7 +95,9 @@ def crossover(p1, p2):
     return {k: random.choice([p1[k], p2[k]]) for k in param_space.keys()}
 
 def genetic_optimize(generations=8, population_size=10, elitism=0.4):
-    """Optimización genética"""
+    """
+    Algoritmo genético :)
+    """
     population = [random_params() for _ in range(population_size)]
     best = None
 
@@ -156,7 +165,7 @@ def branch_and_bound(param_space, partial_params=None, best_score=-np.inf, memo=
 # ================================================
 
 print("\n=== OPTIMIZACIÓN GENÉTICA ===")
-best_ga_score, best_ga_params = genetic_optimize(generations=6, population_size=8)
+best_ga_score, best_ga_params = genetic_optimize(generations=10, population_size=20, elitism=0.2)
 
 print("\n=== OPTIMIZACIÓN BRANCH AND BOUND ===")
 best_bb_params, best_bb_score = branch_and_bound(param_space)
