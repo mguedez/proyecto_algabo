@@ -71,55 +71,123 @@ param_space = {
 # ================================================
 
 def random_params():
-    """
-    Genera un conjunto aleatorio de hiperparámetros.
-
-    Es un individuo para el algoritmo genético.
-    """
+    """Genera un individuo completamente aleatorio."""
     return {k: random.choice(v) for k, v in param_space.items()}
 
-def mutate(params, mutation_rate=0.4):
+
+# Diversidad de la población
+
+def population_diversity(pop):
     """
-    Mutación aleatoria de un parámetro.
-    
-    Params es el individuo a mutar.
+    Mide la diversidad como el porcentaje de genes distintos dentro de la población.
+    Cuanto más cerca de 1, más diversa es la población.
     """
-    new_params = params.copy()
-    if random.random() < mutation_rate:
-        key = random.choice(list(param_space.keys()))
-        new_params[key] = random.choice(param_space[key])
-    return new_params
+    diffs = []
+    keys = list(param_space.keys())
+
+    for i in range(len(pop)):
+        for j in range(i+1, len(pop)):
+            diff_count = sum(1 for k in keys if pop[i][k] != pop[j][k])
+            diffs.append(diff_count / len(keys))
+
+    return np.mean(diffs) if diffs else 0
+
+
+# Cruce
 
 def crossover(p1, p2):
-    """Cruza dos padres para generar un hijo"""
-    return {k: random.choice([p1[k], p2[k]]) for k in param_space.keys()}
+    """
+    Cruce equilibrado:
+    - 80% hereda de los padres
+    - 20% es reemplazado por un valor aleatorio (exploración)
+    """
+    child = {}
 
-def genetic_optimize(generations=8, population_size=10, elitism=0.4):
+    for k, choices in param_space.items():
+        r = random.random()
+        if r < 0.4:
+            child[k] = p1[k]
+        elif r < 0.8:
+            child[k] = p2[k]
+        else:
+            child[k] = random.choice(choices)
+
+    return child
+
+
+# Mutación adaptativa
+
+def mutate(params, mutation_rate):
     """
-    Algoritmo genético :)
+    Mutación en varios parámetros.
     """
+    new_params = params.copy()
+    for k, choices in param_space.items():
+        if random.random() < mutation_rate:
+            new_params[k] = random.choice(choices)
+    return new_params
+
+
+# Algoritmo genético
+
+def genetic_optimize(
+    generations=25,
+    population_size=30,
+    elitism=0.1,
+    base_mutation=0.25,
+    immigrants_rate=0.1,
+):
+    
     population = [random_params() for _ in range(population_size)]
     best = None
+    no_improve = 0  # para detectar mesetas
 
     for gen in range(generations):
+
+        # Evaluación
         scores = [(evaluate_model(p), p) for p in population]
         scores.sort(reverse=True, key=lambda x: x[0])
-
+        
         best_score, best_params = scores[0]
-        print(f"[GA] Generación {gen+1} | Mejor Score (R²): {best_score:.4f} | {best_params}")
 
-        # Elitismo: conservar los mejores
+        # Detectar si quedó estancado
+        if best is None or best_score > best[0]:
+            best = (best_score, best_params)
+            no_improve = 0
+        else:
+            no_improve += 1
+        
+        # Mutación adaptativa: si está estancado, aumentar mutación
+        mutation_rate = base_mutation + min(0.4, no_improve * 0.05)
+
+        diversity = population_diversity([p for _, p in scores])
+
+        print(f"""
+            === GENERACIÓN {gen+1} ===
+            Mejor R²: {best_score:.4f}
+            Diversidad: {diversity:.3f}
+            Mutación usada: {mutation_rate:.2f}
+            Mejores params: {best_params}
+            """)
+
+        # ---- Selección y elitismo ----
         n_elite = int(population_size * elitism)
         next_gen = [p for _, p in scores[:n_elite]]
 
-        # Rellenar con descendientes
+        # ---- Creación de descendencia ----
         while len(next_gen) < population_size:
-            p1, p2 = random.sample(next_gen, 2)
-            child = mutate(crossover(p1, p2))
+            p1, p2 = random.sample(scores[:15], 2)  # torneo entre los 15 mejores
+            child = mutate(crossover(p1[1], p2[1]), mutation_rate)
             next_gen.append(child)
 
+        # ---- Random immigrants ----
+        num_imm = int(population_size * immigrants_rate)
+        immigrants = [random_params() for _ in range(num_imm)]
+
+        # Reemplazar a los peores
+        next_gen[-num_imm:] = immigrants
+
         population = next_gen
-        best = (best_score, best_params)
 
     return best
 
