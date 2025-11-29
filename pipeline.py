@@ -31,6 +31,11 @@ X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=RANDOM_STATE
 )
 
+# definimos batch para validación durante la optimización
+X_train, X_batch, y_train, y_batch = train_test_split(
+    X_train, y_train, test_size=0.1, random_state=RANDOM_STATE
+)
+
 # Preprocesamiento
 num_features = [
     "longitude", "latitude", "housing_median_age",
@@ -58,6 +63,38 @@ def evaluate_model(params):
     score = np.mean(cross_val_score(model, X_train, y_train, cv=cv, n_jobs=-1, scoring='r2'))
     return score
 
+def fitness_rmse(params, X_batch, y_batch):
+    """
+    Función fitness que evalúa un individuo (configuración de hiperparámetros)
+    usando RMSE en un batch de datos.
+    
+    Args:
+        params (dict): Diccionario con hiperparámetros del RandomForest
+        X_batch (array-like): Características del batch de entrenamiento
+        y_batch (array-like): Target del batch de entrenamiento
+    
+    Returns:
+        float: Negativo del RMSE (para maximizar fitness, minimizamos error)
+               Valores más cercanos a 0 indican mejor ajuste.
+    """
+    model = Pipeline([
+        ("pre", preprocessor),
+        ("rf", RandomForestRegressor(**params, random_state=RANDOM_STATE))
+    ])
+    
+    # Entrenar en el batch
+    model.fit(X_batch, y_batch)
+    
+    # Predecir en el mismo batch
+    y_pred = model.predict(X_batch)
+    
+    # Calcular RMSE
+    rmse = np.sqrt(np.mean((y_batch - y_pred) ** 2))
+    
+    # Retornar negativo para convertir minimización en maximización
+    # (los algoritmos genéticos típicamente maximizan fitness)
+    return -rmse
+
 # Espacio de búsqueda
 param_space = {
     "n_estimators": [50, 100, 150, 200, 250, 300],
@@ -76,7 +113,8 @@ def random_params():
 
     Es un individuo para el algoritmo genético.
     """
-    return {k: random.choice(v) for k, v in param_space.items()}
+    params = {k: random.choice(v) for k, v in param_space.items()}
+    return params[""]
 
 def mutate(params, mutation_rate=0.4):
     """
