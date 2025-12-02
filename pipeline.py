@@ -114,7 +114,7 @@ def random_params():
     Es un individuo para el algoritmo genético.
     """
     params = {k: random.choice(v) for k, v in param_space.items()}
-    return params[""]
+    return params
 
 def mutate(params, mutation_rate=0.4):
     """
@@ -202,8 +202,14 @@ def branch_and_bound(param_space, partial_params=None, best_score=-np.inf, memo=
 # 5. EJECUCIÓN Y COMPARACIÓN DE MÉTODOS
 # ================================================
 
+import time
+
+start = time.perf_counter()
 print("\n=== OPTIMIZACIÓN GENÉTICA ===")
 best_ga_score, best_ga_params = genetic_optimize(generations=10, population_size=40, elitism=0.05)
+end = time.perf_counter()
+
+print(f"Tiempo de ejecució AG: {end - start:.4f} segundos")
 
 print("\n=== OPTIMIZACIÓN BRANCH AND BOUND ===")
 best_bb_params, best_bb_score = branch_and_bound(param_space)
